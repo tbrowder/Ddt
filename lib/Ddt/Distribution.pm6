@@ -1,4 +1,5 @@
 use META6;
+use JSON::Pretty;
 use File::Find;
 use License::Software;
 use Ddt::Template;
@@ -69,7 +70,7 @@ method generate-META6 {
     $meta.version = "*" unless $meta.source-url.defined;
     $meta.license = self!license.url unless !$meta.license.defined;
 
-    $.meta-file.IO.spurt: Ddt::meta-to-json($meta);
+    $.meta-file.IO.spurt: meta-to-json($meta);
 }
 
 method generate-README {
@@ -195,4 +196,8 @@ sub guess-user-and-repo() {
     } else {
         return;
     }
+}
+sub meta-to-json(META6 $meta --> Str:D) {
+    my %h = from-json($meta.to-json: :skip-null).pairs.grep: *.value !~~ Empty;
+    to-json(%h);
 }

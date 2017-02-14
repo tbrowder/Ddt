@@ -14,6 +14,18 @@ has IO::Path $.hooks-dir = $!main-dir.child(<hooks>);
 has IO::Path $.lib-dir   = $!main-dir.child(<lib>);
 has IO::Path $.test-dir  = $!main-dir.child(<t>);
 
+sub find-meta-file(IO::Path:D $top-dir where *.d) of IO::Path:D {
+    my IO::Path:D @candidates = $top-dir.child(<META6.json>),
+                                $top-dir.child(<META.info>);
+    return @candidates.grep(:f & :!l).first;
+}
+
+
+multi method new(IO::Path:D $top-dir where *.d) {
+    my $meta-file = find-meta-file $top-dir;
+    callwith $meta-file;
+}
+
 multi method new(IO::Path $meta-file) {
     my META6 $meta = META6.new(file => $meta-file);
     self.bless: META6 => $meta,
@@ -22,6 +34,8 @@ multi method new(IO::Path $meta-file) {
                 main-comp-unit => $meta.name.subst('-', '::', :g)
 }
 multi method new(Str $meta-file) { self.new($meta-file.IO) }
+
+method name of Str:D { return $.META6<name>; }
 
 method generate-all(:$force?) {
     self!make-directories;

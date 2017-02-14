@@ -55,24 +55,6 @@ multi method cmd('build') {
     build();
 }
 
-multi method cmd('release') {
-    self.cmd('build');
-    my ($user, $repo) = guess-user-and-repo();
-    die "Cannot find user and repository settting" unless $repo;
-    my $meta-file = <META6.json META.info>.grep({.IO ~~ :f & :!l})[0];
-    print "\n" ~ qq:to/EOF/ ~ "\n";
-      Are you ready to release your module? Congrats!
-      For this, follow these steps:
-
-      1. Fork https://github.com/perl6/ecosystem repository.
-      2. Add https://raw.githubusercontent.com/$user/$repo/master/$meta-file to META.list.
-      3. And raise a pull request!
-
-      Once your pull request is merged, we can install your module by:
-      \$ zef install $.module
-    EOF
-}
-
 sub withp6lib(&code) {
     temp %*ENV;
     %*ENV<PERL6LIB> = %*ENV<PERL6LIB>:exists ?? "$*CWD/lib," ~ %*ENV<PERL6LIB> !! "$*CWD/lib";

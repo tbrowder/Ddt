@@ -36,7 +36,11 @@ multi MAIN("new",
 
 #| Build the module in current directory
 multi MAIN("build") {
-    Ddt.new.cmd("build");
+    my $ddt = Ddt::Distribution.new: TOPDIR;
+    $ddt.generate-README;
+    $ddt.generate-META6;
+    return unless "Build.pm".IO.e;
+    run "zef", "build", ".";
 }
 
 multi MAIN("test") {

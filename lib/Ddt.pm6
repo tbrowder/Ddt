@@ -35,80 +35,10 @@ multi method new($module is copy) {
     self.bless(:$module, :$module-file);
 }
 
-
-multi method cmd('build', $license) {
-    my ($module, $module-file) = guess-main-module();
-    if migrate-travis-yml() {
-        note "==> migrated .travis.yml for latest panda change";
-    }
-    regenerate-readme($module-file);
-    self.regenerate-meta-info($module, $module-file, $license);
-    build();
-}
-
-multi method cmd('build') {
-    if migrate-travis-yml() {
-        note "==> migrated .travis.yml for latest panda change";
-    }
-    regenerate-readme($.module-file);
-    self.regenerate-meta-info($.module, $.module-file);
-    build();
-}
-
 sub withp6lib(&code) {
     temp %*ENV;
     %*ENV<PERL6LIB> = %*ENV<PERL6LIB>:exists ?? "$*CWD/lib," ~ %*ENV<PERL6LIB> !! "$*CWD/lib";
     &code();
-}
-
-sub build() {
-    return unless "Build.pm".IO.e;
-    run "zef", "build", ".";
-}
-
-sub regenerate-readme($module-file) {
-    my @cmd = $*EXECUTABLE, "--doc=Markdown", $module-file;
-    my $p = withp6lib { run |@cmd, :out };
-    die "Failed @cmd[]" if $p.exitcode != 0;
-    my $markdown = $p.out.slurp-rest;
-    my ($user, $repo) = guess-user-and-repo();
-    my $header = do if $user and ".travis.yml".IO.e {
-        "[![Build Status](https://travis-ci.org/$user/$repo.svg?branch=master)]"
-            ~ "(https://travis-ci.org/$user/$repo)"
-            ~ "\n\n";
-    } else {
-        "";
-    }
-
-    spurt "README.md", $header ~ $markdown;
-}
-
-multi method regenerate-meta-info(License::Software::Abstract $license) {
-    my ($module, $module-file) = guess-main-module();
-    callwith $module, $module-file, $license;
-}
-
-multi method regenerate-meta-info($module, $module-file, License::Software::Abstract $license?) {
-    my $meta-file = <META.info>.IO ~~ :f & :!l ?? <META.info> !! <META6.json> ;
-    my $meta = META6.new: file => $meta-file;
-
-    $meta.perl-version = $*PERL.version unless $meta.perl-version.defined;
-    $meta.name = $module;
-    if $meta.authors ~~ Empty || author() ∉ $meta.authors {
-        $meta.authors.push: author()
-    }
-    if $meta.test-depends ~~ Empty || "Test::META" ∉ $meta.test-depends {
-        $meta.test-depends.push: "Test::META"
-    }
-    $meta.description = find-description($module-file) || $meta.description;
-    $meta.provides = find-provides();
-    $meta.source-url = find-source-url() unless $meta.source-url.defined;
-    $meta.version = "*" unless $meta.source-url.defined;
-    if $license.defined and !$meta.license.defined {
-        $meta.license = $license.url
-    }
-
-    $meta-file.IO.spurt: meta-to-json($meta);
 }
 
 sub find-description($module-file) {

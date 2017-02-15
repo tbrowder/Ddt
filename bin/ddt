@@ -10,7 +10,15 @@ use License::Software;
 
 sub author { qx{git config --global user.name}.chomp }
 sub email { qx{git config --global user.email}.chomp }
-sub TOPDIR { qx{git rev-parse --show-toplevel}.chomp.IO }
+sub TOPDIR of IO::Path:D { 
+    my Proc:D $proc = Proc.new(:out, :err);
+    $proc.shell: 'git rev-parse --show-toplevel';
+    my $dir = $proc.out.slurp-rest;
+    unless $dir {
+        return fail "Not in a repository"
+    } 
+    return $dir.chomp.IO
+}
 
 #| Create new module
 multi MAIN("new",
@@ -82,12 +90,14 @@ sub cand-name($candi) of Str:D {
 
 #| Checkout a Distribution and start hacking on it
 multi MAIN("hack", Str:D $identity, Str $dir?) {
+
+    if !$dir.defined && TOPDIR().defined {
+        die "You are already in a repository please specify exact dir to clone to"
+    }
+
     my Zef::Client:D $client     = get-client;
     my @candidates = $client.search( str2identity($identity) );
     die "No candidates found" unless @candidates.elems;
-    if !$dir.defined && TOPDIR.IO.e {
-        die "You are already in a repository please specify exact dir to clone to"
-    }
     my Str:D $target = ($dir || cand-name @candidates.first);
     die "Directory $target already exists" if $target.IO.e;
 
@@ -101,8 +111,8 @@ multi MAIN("hack", Str:D $identity, Str $dir?) {
     my $candi = @local.first;
     my IO::Path:D $local-mirror = $client.config<TempDir>.IO.child($uri.IO.basename);
     say qqx{git clone $uri --reference $local-mirror.Str() $target};
-    say "Changing directory to $target";
-    exit so shell(%*ENV<SHELL> // %*ENV<ComSpec> // %*ENV<COMSPEC>, :cwd($target)) ?? 0 !! 1;
+    say "Checked out $uri to $target";
+    say "You can now do `cd $target`";
 }
 
 

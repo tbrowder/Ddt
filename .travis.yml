@@ -3,11 +3,7 @@ perl6:
   - latest
 install:
   - rakudobrew build zef
-  - zef install TAP::Harness
-  - rakudobrew rehash
   - zef --/test --depsonly install .
 script:
-  - pwd
-  - ls
-  - prove6 --timer -j=2 t xt
+  - prove --exec 'perl6 -Ilib' -r --timer -vv t xt
 sudo: false

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/kalkin/Ddt.svg?branch=master)](https://travis-ci.org/kalkin/Ddt)
+[![Build Status](https://travis-ci.com/tbrowder/Ddt.svg?branch=master)](https://travis-ci.cok/tbrowder/Ddt)
 
 NAME
 ====
